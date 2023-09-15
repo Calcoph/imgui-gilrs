@@ -3,6 +3,11 @@ use std::collections::HashMap;
 use gilrs::GamepadId;
 use imgui::{BackendFlags, Io, Key};
 
+#[cfg(feature = "winit")]
+use imgui_winit_support::WinitPlatform;
+#[cfg(feature = "winit")]
+use winit::window::Window;
+
 fn to_imgui_gamepad_key(button: gilrs::Button) -> Option<Key> {
     match button {
         gilrs::Button::South => Some(Key::GamepadFaceDown),
@@ -210,7 +215,13 @@ impl GamepadHandler {
         }
     }
 
+    #[cfg(not(feature = "winit"))]
+    #[inline]
     pub fn handle_event(&mut self, io: &mut Io, controller_event: &gilrs::Event) {
+        self.handle_gilrs_event(io, controller_event)
+    }
+
+    fn handle_gilrs_event(&mut self, io: &mut Io, controller_event: &gilrs::Event) {
         use gilrs::EventType as GEvent;
         match controller_event.event {
             GEvent::ButtonPressed(button, _) => {
@@ -247,6 +258,16 @@ impl GamepadHandler {
             }
             GEvent::ButtonRepeated(_, _) => (),
             GEvent::Dropped => (),
+        }
+    }
+
+    #[cfg(feature = "winit")]
+    pub fn handle_event(&mut self, io: &mut Io, window: &Window, platform: &mut WinitPlatform, event: &winit::event::Event<gilrs::Event>) {
+        match event {
+            winit::event::Event::UserEvent(controller_event) => {
+                self.handle_gilrs_event(io, controller_event)
+            }
+            _ => platform.handle_event(io, window, event)
         }
     }
 }
