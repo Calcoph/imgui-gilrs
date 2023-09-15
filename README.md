@@ -11,5 +11,15 @@ let io = Context::io_mut();
 io.config_flags |= imgui::ConfigFlags::NAV_ENABLE_GAMEPAD;
 ```
 
+See [Troubleshooting](#Troubleshooting) if encountering any issue.
+
 ## Features
 * `winit`: allows `GamepadHandler::handle_event()` to also call `WinitPlatform::handle_event()`
+
+## Troubleshooting
+If using the `imgui-wgpu` crate, and the program crashes when opening the window menu (hold X on XBOX or Square on PlayStation) then you must use commit `89394e0` or later of the crate. You can do that by inserting the following in your Cargo.toml:
+
+```toml
+[patch.crates-io]
+imgui-wgpu = { git = "https://github.com/Yatekii/imgui-wgpu-rs", rev = "89394e0" }
+```
