@@ -14,3 +14,12 @@ winit = { version = "0.27", optional = true }
 [features]
 winit = ["dep:winit", "imgui-winit-support"]
 #default = ["winit"]
+
+[dev-dependencies]
+gilrs = "0.10"
+imgui-wgpu = "0.24"
+wgpu = "0.17"
+pollster = "0.3"
+
+[patch.crates-io]
+imgui-wgpu = { git = "https://github.com/Yatekii/imgui-wgpu-rs", rev = "89394e0" }
