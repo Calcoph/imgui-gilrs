@@ -1,14 +1,22 @@
-#[cfg(feature = "winit")]
-use imgui_winit_support::WinitPlatform;
-#[cfg(feature = "winit")]
-use winit::{event_loop::{EventLoopBuilder, EventLoopProxy, ControlFlow, EventLoop}, window::{self, Window}, dpi, event::{Event as WinEvent, WindowEvent}};
-use std::thread;
 use gilrs::{Event as GilEvent, Gilrs};
 use imgui::{Context, Ui};
-use imgui_wgpu::Renderer;
-use wgpu::{InstanceDescriptor, Device, Queue, SurfaceConfiguration, Surface, TextureViewDescriptor, CommandEncoderDescriptor, CommandEncoder, TextureView};
-use imgui_wgpu::RendererConfig;
 use imgui_gilrs::GamepadHandler;
+use imgui_wgpu::Renderer;
+use imgui_wgpu::RendererConfig;
+#[cfg(feature = "winit")]
+use imgui_winit_support::WinitPlatform;
+use std::thread;
+use wgpu::{
+    CommandEncoder, CommandEncoderDescriptor, Device, InstanceDescriptor, Queue, Surface,
+    SurfaceConfiguration, TextureView, TextureViewDescriptor,
+};
+#[cfg(feature = "winit")]
+use winit::{
+    dpi,
+    event::{Event as WinEvent, WindowEvent},
+    event_loop::{ControlFlow, EventLoop, EventLoopBuilder, EventLoopProxy},
+    window::{self, Window},
+};
 
 const WINDOW_WIDTH: u32 = 1000;
 const WINDOW_HEIGHT: u32 = 700;
@@ -29,7 +37,7 @@ struct WgpuElements {
     device: Device,
     queue: Queue,
     config: SurfaceConfiguration,
-    surface: Surface
+    surface: Surface,
 }
 
 #[cfg(feature = "winit")]
@@ -93,7 +101,7 @@ async fn init_wgpu(winit_elem: &WinitElements) -> WgpuElements {
 #[cfg(feature = "winit")]
 struct WinitElements {
     window: Window,
-    event_loop: EventLoop<GilEvent>
+    event_loop: EventLoop<GilEvent>,
 }
 
 #[cfg(feature = "winit")]
@@ -101,16 +109,10 @@ fn init_winit() -> WinitElements {
     let event_loop = EventLoopBuilder::with_user_event().build();
     let wb = window::WindowBuilder::new()
         .with_title("imgui-gilrs-example")
-        .with_inner_size(dpi::LogicalSize::new(
-            WINDOW_WIDTH,
-            WINDOW_HEIGHT
-        ));
+        .with_inner_size(dpi::LogicalSize::new(WINDOW_WIDTH, WINDOW_HEIGHT));
     let window = wb.build(&event_loop).expect("Couldn't create window");
-    
-    WinitElements {
-        window,
-        event_loop
-    }
+
+    WinitElements { window, event_loop }
 }
 
 #[cfg(feature = "winit")]
@@ -118,23 +120,32 @@ struct ImguiElements {
     context: Context,
     platform: WinitPlatform,
     renderer: Renderer,
-    ui_state: UiState
+    ui_state: UiState,
 }
 
 #[cfg(feature = "winit")]
 fn init_imgui(wgpu_elem: &WgpuElements, winit_elem: &WinitElements) -> ImguiElements {
     let mut context = Context::create();
     context.io_mut().config_flags |= imgui::ConfigFlags::NAV_ENABLE_GAMEPAD;
-    
+
     let mut platform = imgui_winit_support::WinitPlatform::init(&mut context);
-    platform.attach_window(context.io_mut(), &winit_elem.window, imgui_winit_support::HiDpiMode::Default);
-    
+    platform.attach_window(
+        context.io_mut(),
+        &winit_elem.window,
+        imgui_winit_support::HiDpiMode::Default,
+    );
+
     let renderer_config = RendererConfig {
         texture_format: wgpu_elem.config.format,
         ..Default::default()
     };
-    
-    let renderer = Renderer::new(&mut context, &wgpu_elem.device, &wgpu_elem.queue, renderer_config);
+
+    let renderer = Renderer::new(
+        &mut context,
+        &wgpu_elem.device,
+        &wgpu_elem.queue,
+        renderer_config,
+    );
 
     let ui_state = UiState::new();
 
@@ -142,7 +153,7 @@ fn init_imgui(wgpu_elem: &WgpuElements, winit_elem: &WinitElements) -> ImguiElem
         context,
         platform,
         renderer,
-        ui_state
+        ui_state,
     }
 }
 
@@ -151,7 +162,7 @@ struct State {
     wgpu: WgpuElements,
     winit: WinitElements,
     imgui: ImguiElements,
-    gamepad_handler: GamepadHandler
+    gamepad_handler: GamepadHandler,
 }
 
 #[cfg(feature = "winit")]
@@ -166,30 +177,29 @@ fn init() -> State {
         wgpu: wgpu_elem,
         winit: winit_elem,
         imgui: imgui_elem,
-        gamepad_handler
+        gamepad_handler,
     }
 }
 
 #[cfg(feature = "winit")]
 fn main_loop(state: State) {
     let State {
-        wgpu: WgpuElements {
-            device,
-            queue,
-            mut config,
-            surface
-        },
-        winit: WinitElements {
-            window,
-            event_loop
-        },
-        imgui: ImguiElements {
-            mut context,
-            mut platform,
-            mut renderer,
-            mut ui_state
-        },
-        mut gamepad_handler
+        wgpu:
+            WgpuElements {
+                device,
+                queue,
+                mut config,
+                surface,
+            },
+        winit: WinitElements { window, event_loop },
+        imgui:
+            ImguiElements {
+                mut context,
+                mut platform,
+                mut renderer,
+                mut ui_state,
+            },
+        mut gamepad_handler,
     } = state;
 
     event_loop.run(move |event, _, control_flow| {
@@ -203,42 +213,57 @@ fn main_loop(state: State) {
                         config.width = new_size.width;
                         config.height = new_size.height;
                         surface.configure(&device, &config)
-                    },
+                    }
                     WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                    WindowEvent::ScaleFactorChanged { scale_factor: _, new_inner_size } => {
+                    WindowEvent::ScaleFactorChanged {
+                        scale_factor: _,
+                        new_inner_size,
+                    } => {
                         config.width = new_inner_size.width;
                         config.height = new_inner_size.height;
                         surface.configure(&device, &config)
-                    },
-                    _ => ()
+                    }
+                    _ => (),
                 }
-            },
+            }
             WinEvent::MainEventsCleared => window.request_redraw(),
             WinEvent::RedrawRequested(window_id) if *window_id == window.id() => {
-                // TODO
                 if let Ok(texture) = surface.get_current_texture() {
-                    let view = texture.texture.create_view(&TextureViewDescriptor::default());
-                    platform.prepare_frame(context.io_mut(), &window).expect("Failed to prepare frame");
+                    let view = texture
+                        .texture
+                        .create_view(&TextureViewDescriptor::default());
+                    platform
+                        .prepare_frame(context.io_mut(), &window)
+                        .expect("Failed to prepare frame");
                     let ui = context.frame();
 
                     create_ui(ui, &mut ui_state);
 
-                    let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor { label: Some("ImGui Render Encoder") });
-                    render(&mut encoder, &view, &mut renderer, &mut context, &queue, &device);
+                    let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor {
+                        label: Some("ImGui Render Encoder"),
+                    });
+                    render(
+                        &mut encoder,
+                        &view,
+                        &mut renderer,
+                        &mut context,
+                        &queue,
+                        &device,
+                    );
 
                     queue.submit(std::iter::once(encoder.finish()));
                     texture.present();
                 }
-            },
+            }
             #[allow(unused_variables)]
             WinEvent::UserEvent(gamepad_event) => {
                 //* if not using feature `winit`, call here
                 //* gamepad_handler.handle_event(context.io_mut(), &gamepad_event)
             }
-            _ => ()
+            _ => (),
         }
 
-        //* This is the equivalent as:
+        //* This is the equivalent to:
         //*   gamepad_handler.handle_event(io, gamepad_event)
         //* when encountering WinEvent::UserEvent(_)
         //* (See above)
@@ -250,20 +275,18 @@ fn main_loop(state: State) {
 }
 
 struct TutorialWindow {
-    button_count: u32
+    button_count: u32,
 }
 
 impl TutorialWindow {
     fn new() -> TutorialWindow {
-        TutorialWindow {
-            button_count: 0,
-        }
+        TutorialWindow { button_count: 0 }
     }
 }
 
 struct UiState {
     xbox: TutorialWindow,
-    ps: TutorialWindow
+    ps: TutorialWindow,
 }
 
 impl UiState {
@@ -277,13 +300,9 @@ impl UiState {
 
 #[cfg(feature = "winit")]
 fn create_ui(ui: &mut Ui, state: &mut UiState) {
-    ui.window("One").build(|| {
+    ui.window("One").build(|| {});
 
-    });
-
-    ui.window("Two").build(|| {
-
-    });
+    ui.window("Two").build(|| {});
 
     ui.window("Tutorial XBOX").build(|| {
         ui.text("Hold X to show window menu");
@@ -293,15 +312,15 @@ fn create_ui(ui: &mut Ui, state: &mut UiState) {
         ui.text("\tUse LStick to move the window");
         ui.separator();
         ui.text("Use the DPAD to move between widgets");
-        
+
         ui.separator();
         if ui.button("Press me with A") {
             state.xbox.button_count += 1
         }
-        
+
         let count = state.xbox.button_count.to_string();
         ui.text(count);
-        
+
         ui.separator();
         ui.button("0,0");
         ui.same_line();
@@ -357,7 +376,14 @@ fn create_ui(ui: &mut Ui, state: &mut UiState) {
 }
 
 #[cfg(feature = "winit")]
-fn render(encoder: &mut CommandEncoder, view: &TextureView, renderer: &mut Renderer, context: &mut Context, queue: &Queue, device: &Device) {
+fn render(
+    encoder: &mut CommandEncoder,
+    view: &TextureView,
+    renderer: &mut Renderer,
+    context: &mut Context,
+    queue: &Queue,
+    device: &Device,
+) {
     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
         label: None,
         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -382,7 +408,9 @@ fn start_gilrs(event_loop: EventLoopProxy<GilEvent>) -> GamepadHandler {
         let mut listener = Gilrs::new().expect("Couldn't initialize gilrs");
         loop {
             while let Some(ev) = listener.next_event() {
-                event_loop.send_event(ev).expect("Event loop no longer exists");
+                event_loop
+                    .send_event(ev)
+                    .expect("Event loop no longer exists");
             }
         }
     });

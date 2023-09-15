@@ -262,12 +262,18 @@ impl GamepadHandler {
     }
 
     #[cfg(feature = "winit")]
-    pub fn handle_event(&mut self, io: &mut Io, window: &Window, platform: &mut WinitPlatform, event: &winit::event::Event<gilrs::Event>) {
+    pub fn handle_event(
+        &mut self,
+        io: &mut Io,
+        window: &Window,
+        platform: &mut WinitPlatform,
+        event: &winit::event::Event<gilrs::Event>,
+    ) {
         match event {
             winit::event::Event::UserEvent(controller_event) => {
                 self.handle_gilrs_event(io, controller_event)
             }
-            _ => platform.handle_event(io, window, event)
+            _ => platform.handle_event(io, window, event),
         }
     }
 }
