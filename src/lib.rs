@@ -258,6 +258,8 @@ impl GamepadHandler {
             }
             GEvent::ButtonRepeated(_, _) => (),
             GEvent::Dropped => (),
+            GEvent::ForceFeedbackEffectCompleted => (),
+            _ => unimplemented!(),
         }
     }
 
